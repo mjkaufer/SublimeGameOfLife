@@ -3,7 +3,8 @@ import sublime_plugin
 import random
 
 class AnimateCommand(sublime_plugin.TextCommand):
-    def run(self, edit, running):
+    lastGrid = None
+    def run(self, edit, firstTime):
         # if not running:
         #     return
 
@@ -12,22 +13,24 @@ class AnimateCommand(sublime_plugin.TextCommand):
         # print(running)
         # applies animation
         totalRegion = sublime.Region(0, self.view.size())
-        charGrid = []
-        lines = self.view.lines(totalRegion)
-        for r in range(len(lines)):
-            line = lines[r]
+        if firstTime or not self.lastGrid:
+            self.lastGrid = []
+            lines = self.view.lines(totalRegion)
+            for r in range(len(lines)):
+                line = lines[r]
 
-            charGrid.append([])
+                self.lastGrid.append([])
 
-            for c in range(line.begin(), line.end()):
-                char = sublime.Region(c, c+1)
-                c = c - line.begin()
-                if self.view.substr(char) == "\t": # we don't want tabs, but rather spaces
-                    charGrid[r] += [" "] * tabSize
-                else:
-                    charGrid[r].append(self.view.substr(char))
+                for c in range(line.begin(), line.end()):
+                    char = sublime.Region(c, c+1)
+                    c = c - line.begin()
+                    if self.view.substr(char) == "\t": # we don't want tabs, but rather spaces
+                        self.lastGrid[r] += [" "] * tabSize
+                    else:
+                        self.lastGrid[r].append(self.view.substr(char))
 
-        newGrid = self.nextFrame(charGrid)
+
+        newGrid = self.nextFrame(self.lastGrid)
 
         newContents = ""
 
@@ -40,7 +43,9 @@ class AnimateCommand(sublime_plugin.TextCommand):
 
         self.view.replace(edit, totalRegion, newContents)
 
-        # print(charGrid)
+        self.lastGrid = newGrid
+
+        # print(self.lastGrid)
 
         
         
@@ -80,6 +85,8 @@ class AnimateCommand(sublime_plugin.TextCommand):
                 else:
                     if len(neighbors) == 3:
                         newGrid[r][c] = generateLivingCharacter(neighbors)
+                    else:
+                        newGrid[r][c] = " "
 
         return newGrid
 
@@ -95,21 +102,21 @@ class SimulateCommand(sublime_plugin.TextCommand):
 
     def run(self, edit):
 
-        print("Before", self.running)
+        # print("Before", self.running)
         if self.running:
-            self.running = not self.running
+            self.running = False
             self.stopSimulation(edit)
             # the game of life is already running - the user wants to revert the game
             # stop game of life, revert to original file contents
             
         else:
-            self.running = not self.running
+            self.running = True
             self.startSimulation(edit)
             # back up file contents to revert to later
             # run game of life at interval of x seconds
             # parts which match the \w regex are deemed living, everything else is considered dead
 
-        print("After", self.running)
+        # print("After", self.running)
 
 
 
@@ -126,16 +133,15 @@ class SimulateCommand(sublime_plugin.TextCommand):
     def animate(self, x):
         print("A",self.running)
         if not self.running:
+            self.running = False
             return
-        self.view.run_command("animate", {"running": self.running})
+
+        firstTime = x == 0
+
+        self.view.run_command("animate", {"firstTime": firstTime})
         
-        # if running:
-        sublime.set_timeout_async(lambda: self.animate(x+1), 100)
-
-
-
-
-
+        if self.running:
+            sublime.set_timeout(lambda: self.animate(1), 100)
 
 
 def living(char):
