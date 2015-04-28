@@ -3,8 +3,10 @@ import sublime_plugin
 import random
 import copy
 
+
 class AnimateCommand(sublime_plugin.TextCommand):
     lastGrid = None
+
     def run(self, edit, firstTime):
         # if not running:
         #     return
@@ -23,82 +25,84 @@ class AnimateCommand(sublime_plugin.TextCommand):
                 self.lastGrid.append([])
 
                 for c in range(line.begin(), line.end()):
-                    char = sublime.Region(c, c+1)
+                    char = sublime.Region(c, c + 1)
                     c = c - line.begin()
-                    if self.view.substr(char) == "\t": # we don't want tabs, but rather spaces
+                    # we don't want tabs, but rather spaces
+                    if self.view.substr(char) == "\t":
                         self.lastGrid[r] += [" "] * tabSize
                     else:
                         self.lastGrid[r].append(self.view.substr(char))
 
-
-        newGrid = self.nextFrame(self.lastGrid)
+        self.nextFrame(self.lastGrid)
 
         newContents = ""
 
-        for r in range(len(newGrid)):
-            for c in range(len(newGrid[r])):
-                newContents += newGrid[r][c]
+        for r in range(len(self.lastGrid)):
+            for c in range(len(self.lastGrid[r])):
+                newContents += self.lastGrid[r][c]
             newContents += "\n"
 
-        newContents = newContents[:len(newContents) - 1] # to get rid of trailing newline
+        # to get rid of trailing newline
+        newContents = newContents[:len(newContents) - 1]
 
         self.view.replace(edit, totalRegion, newContents)
 
-        self.lastGrid = newGrid
+        # self.lastGrid = grid
 
         # print(self.lastGrid)
-
-        
-        
 
     def getNeighbors(self, grid, row, col):
 
         neighbors = []
 
-        for r in [-1, 0, 1]:
-            for c in [-1, 0, 1]:
+        for r in range(-1, 1 + 1):
+            for c in range(-1, 1 + 1):
+
+                if r == c == 0:
+                    continue
+
                 nr = row + r
                 nc = col + c
 
-                if nr == row and nc == col:
-                    continue
-
-                if 0 <= nr < len(grid) and 0 <= nc < len(grid[nr]): # if this position is defined
+                # if this position is defined
+                if 0 <= nr < len(grid) and 0 <= nc < len(grid[nr]):
 
                     cell = grid[nr][nc]
                     if living(cell):
-                        if row == 0 and col == 1:
-                            print(nr, nc, grid[nr][nc])
+
                         neighbors.append(cell)
 
         return neighbors
 
     def nextFrame(self, grid):
 
-
-        newGrid = copy.deepcopy(grid)
+        # changes which we implement afterwards, to save us from having to
+        # deepcopy
+        changes = {}
 
         for r in range(len(grid)):
             for c in range(len(grid[r])):
                 cell = grid[r][c]
                 neighbors = self.getNeighbors(grid, r, c)
-                print("Row",r,"Col",c,neighbors)
+
                 if living(cell):
                     if 2 <= len(neighbors) <= 3:
                         # cell survives
                         continue
                     else:
-                        newGrid[r][c] = " "
+                        changes[(r, c)] = " "
                 else:
                     if len(neighbors) == 3:
-                        newGrid[r][c] = generateLivingCharacter(neighbors)
+                        changes[(r, c)] = generateLivingCharacter(neighbors)
                     else:
-                        newGrid[r][c] = " "
+                        changes[(r, c)] = " "
 
-        for i in range(len(newGrid)):
-            print(newGrid[i])
+        for coord in changes:
+            r = coord[0]
+            c = coord[1]
+            grid[r][c] = changes[coord]
 
-        return newGrid
+        return grid
 
 
 class SimulateCommand(sublime_plugin.TextCommand):
@@ -116,13 +120,14 @@ class SimulateCommand(sublime_plugin.TextCommand):
             self.stopSimulation(edit)
             # the game of life is already running - the user wants to revert the game
             # stop game of life, revert to original file contents
-            
+
         else:
             self.running = True
             self.startSimulation(edit)
             # back up file contents to revert to later
             # run game of life at interval of x seconds
-            # parts which match the \w regex are deemed living, everything else is considered dead
+            # parts which match the \w regex are deemed living, everything else
+            # is considered dead
 
         # print("After", self.running)
 
@@ -134,10 +139,10 @@ class SimulateCommand(sublime_plugin.TextCommand):
         self.animate(0)
 
     def stopSimulation(self, edit):
-        self.view.replace(edit, sublime.Region(0, self.view.size()), self.fileBuffer)
+        self.view.replace(
+            edit, sublime.Region(0, self.view.size()), self.fileBuffer)
 
     def animate(self, x):
-        print("A",self.running)
         if not self.running:
             self.running = False
             return
@@ -145,7 +150,7 @@ class SimulateCommand(sublime_plugin.TextCommand):
         firstTime = x == 0
 
         self.view.run_command("animate", {"firstTime": firstTime})
-        
+
         if self.running:
             sublime.set_timeout(lambda: self.animate(1), 100)
 
@@ -153,20 +158,20 @@ class SimulateCommand(sublime_plugin.TextCommand):
 def living(char):
     return ord('a') <= ord(char.lower()) <= ord('z')
 
-def generateLivingCharacter(livingCharacters):
-    # generates a living character based on the ord value of the letters, along with the capitalization
 
-    avg = int(sum([ord(l.lower()) for l in livingCharacters]) / len(livingCharacters)) # letter's char code
+def generateLivingCharacter(livingCharacters):
+    # generates a living character based on the ord value of the letters,
+    # along with the capitalization
+
+    avg = int(sum([ord(l.lower()) for l in livingCharacters]) /
+              len(livingCharacters))  # letter's char code
 
     char = chr(avg)
 
-    uppercaseProbability = sum([l.upper() == l for l in livingCharacters]) / len(livingCharacters)
+    uppercaseProbability = sum(
+        [l.upper() == l for l in livingCharacters]) / len(livingCharacters)
 
     if random.random() < uppercaseProbability:
         char = char.upper()
 
     return char
-
-def p():
-    print("AAA")
-        
