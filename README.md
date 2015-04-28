@@ -6,3 +6,7 @@ Use the keystroke `ctrl-alt-g` to start the game of life. Hitting the keystroke 
 
 ## Disclaimer
 **You should always keep a backup of your files, especially the ones undergoing the game of life!** I, although potentially sad, am not responsible if your files are messed up by this. 
+
+Also, very large files, understandably, take a while to process, so avoid running the game of life on things such as the Linux kernel.
+
+### Have fun!
