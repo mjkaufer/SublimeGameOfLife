@@ -1,6 +1,7 @@
 import sublime
 import sublime_plugin
 import random
+import copy
 
 class AnimateCommand(sublime_plugin.TextCommand):
     lastGrid = None
@@ -54,28 +55,35 @@ class AnimateCommand(sublime_plugin.TextCommand):
 
         neighbors = []
 
-        for r in range(-1, 1+1):
-            for c in range(-1, 1+1):
-                if r == c == 0:
-                    continue
+        for r in [-1, 0, 1]:
+            for c in [-1, 0, 1]:
                 nr = row + r
                 nc = col + c
 
+                if nr == row and nc == col:
+                    continue
+
                 if 0 <= nr < len(grid) and 0 <= nc < len(grid[nr]): # if this position is defined
+
                     cell = grid[nr][nc]
                     if living(cell):
+                        if row == 0 and col == 1:
+                            print(nr, nc, grid[nr][nc])
                         neighbors.append(cell)
 
         return neighbors
 
     def nextFrame(self, grid):
 
-        newGrid = grid[:][:]
+        gridClone = copy.deepcopy(grid)
 
-        for r in range(len(newGrid)):
-            for c in range(len(newGrid[r])):
-                cell = grid[r][c]
-                neighbors = self.getNeighbors(grid, r, c)
+        newGrid = copy.deepcopy(grid)
+
+        for r in range(len(grid)):
+            for c in range(len(grid[r])):
+                cell = gridClone[r][c]
+                neighbors = self.getNeighbors(gridClone, r, c)
+                print("Row",r,"Col",c,neighbors)
                 if living(cell):
                     if 2 <= len(neighbors) <= 3:
                         # cell survives
@@ -88,21 +96,22 @@ class AnimateCommand(sublime_plugin.TextCommand):
                     else:
                         newGrid[r][c] = " "
 
+        for i in range(len(newGrid)):
+            print(newGrid[i])
+
         return newGrid
-
-
-
-
 
 
 class SimulateCommand(sublime_plugin.TextCommand):
 
     running = False
     fileBuffer = ""
+    edit = None
 
     def run(self, edit):
 
         # print("Before", self.running)
+        self.edit = edit
         if self.running:
             self.running = False
             self.stopSimulation(edit)
@@ -117,8 +126,6 @@ class SimulateCommand(sublime_plugin.TextCommand):
             # parts which match the \w regex are deemed living, everything else is considered dead
 
         # print("After", self.running)
-
-
 
     def startSimulation(self, edit):
         fileRegion = sublime.Region(0, self.view.size())
