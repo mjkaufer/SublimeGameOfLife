@@ -75,14 +75,13 @@ class AnimateCommand(sublime_plugin.TextCommand):
 
     def nextFrame(self, grid):
 
-        gridClone = copy.deepcopy(grid)
 
         newGrid = copy.deepcopy(grid)
 
         for r in range(len(grid)):
             for c in range(len(grid[r])):
-                cell = gridClone[r][c]
-                neighbors = self.getNeighbors(gridClone, r, c)
+                cell = grid[r][c]
+                neighbors = self.getNeighbors(grid, r, c)
                 print("Row",r,"Col",c,neighbors)
                 if living(cell):
                     if 2 <= len(neighbors) <= 3:
