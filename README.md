@@ -1,6 +1,10 @@
 # SublimeGameOfLife
 A Sublime Text package which simulates Conway's Game of Life through your Sublime Text file's contents!
 
+## Demo
+
+![Game of Life in action!](http://i.imgur.com/OGa8FQx.gif)
+
 ## Usage
 Use the keystroke `ctrl-alt-g` to start the game of life. Hitting the keystroke once again will revert your file to its original state.
 
